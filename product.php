@@ -1,4 +1,5 @@
 <?php
+session_start();
 include 'db.php'; // Połączenie z bazą danych
 
 // Pobieranie ID produktu z parametru URL
@@ -25,6 +26,50 @@ $product = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
 if (!$product) {
     die("Produkt nie znaleziony.");
 }
+
+// Obsługa dodawania do koszyka
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add_to_cart'])) {
+    $user_id = $_SESSION['ID_Uzytkownika'] ?? null; // Pobierz ID użytkownika z sesji
+
+    if (!$user_id) {
+        die("Musisz być zalogowany, aby dodać produkt do koszyka.");
+    }
+
+    // Sprawdzenie, czy użytkownik ma już aktywny koszyk
+    $cart_query = "SELECT TOP 1 ID_Koszyka FROM Koszyk WHERE ID_Uzytkownika = ? ORDER BY Data_Utworzenia DESC";
+    $cart_params = [$user_id];
+    $cart_stmt = sqlsrv_prepare($conn, $cart_query, $cart_params);
+
+    if ($cart_stmt === false) {
+        die(print_r(sqlsrv_errors(), true));
+    }
+
+    sqlsrv_execute($cart_stmt);
+    $cart = sqlsrv_fetch_array($cart_stmt, SQLSRV_FETCH_ASSOC);
+
+    if (!$cart) {
+        die("Nie znaleziono aktywnego koszyka.");
+    }
+
+    $cart_id = $cart['ID_Koszyka'];
+
+    // Dodanie produktu do koszyka
+    $quantity = (int)($_POST['quantity'] ?? 1);
+
+    $insert_query = "INSERT INTO Koszyk_Produkt (ID_Koszyka, ID_Produktu, Ilosc) VALUES (?, ?, ?)";
+    $insert_params = [$cart_id, $product_id, $quantity];
+    $insert_stmt = sqlsrv_prepare($conn, $insert_query, $insert_params);
+
+    if ($insert_stmt === false) {
+        die(print_r(sqlsrv_errors(), true));
+    }
+
+    if (sqlsrv_execute($insert_stmt)) {
+        echo "<p>Produkt został dodany do koszyka!</p>";
+    } else {
+        die("Nie udało się dodać produktu do koszyka.");
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -40,7 +85,7 @@ if (!$product) {
     <div class="logo">TECHHOUSE</div>
     <div class="user-menu">
       <a href="#">Moje Konto</a>
-      <a href="#">Koszyk</a>
+      <a href="cart.php">Koszyk</a>
     </div>
   </header>
 
@@ -51,7 +96,12 @@ if (!$product) {
       <p><?= number_format($product['Cena'], 2) ?> zł</p>
       <p>⭐⭐⭐⭐⭐</p>
       <p><?= htmlspecialchars($product['Opis']) ?></p>
-      <button>Dodaj do koszyka</button>
+
+      <form action="" method="POST">
+        <label for="quantity">Ilość:</label>
+        <input type="number" name="quantity" id="quantity" value="1" min="1">
+        <button type="submit" name="add_to_cart">Dodaj do koszyka</button>
+      </form>
     </section>
   </main>
 

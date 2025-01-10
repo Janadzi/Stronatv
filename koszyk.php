@@ -1,31 +1,43 @@
 <?php
+session_start();
 include 'db.php'; // Połączenie z bazą danych
 
-// Obsługa usuwania rekordu
-if (isset($_GET['delete_id'])) {
-    $delete_id = $_GET['delete_id'];
-    $query = "DELETE FROM Koszyk WHERE ID_Koszyka = ?";
-    $stmt = sqlsrv_prepare($conn, $query, [$delete_id]);
-    if (sqlsrv_execute($stmt)) {
-        echo "Rekord usunięty.";
-    } else {
-        echo "Błąd podczas usuwania.";
-    }
+// Sprawdzenie, czy użytkownik jest zalogowany
+if (!isset($_SESSION['ID_Uzytkownika'])) {
+    die("Musisz być zalogowany, aby wyświetlić koszyk.");
 }
 
-// Obsługa dodawania nowego rekordu
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add'])) {
-    $id_uzytkownika = $_POST['ID_Uzytkownika'];
-    $data_utworzenia = $_POST['Data_Utworzenia'];
+// Pobranie ID użytkownika
+$id_uzytkownika = $_SESSION['ID_Uzytkownika']; 
 
-    $query = "INSERT INTO Koszyk (ID_Uzytkownika, Data_Utworzenia) VALUES (?, ?)";
-    $stmt = sqlsrv_prepare($conn, $query, [$id_uzytkownika, $data_utworzenia]);
-    if (sqlsrv_execute($stmt)) {
-        echo "Rekord dodany.";
-    } else {
-        echo "Błąd podczas dodawania.";
-    }
+// Znalezienie najnowszego koszyka dla użytkownika
+$query = "SELECT TOP 1 * FROM Koszyk WHERE ID_Uzytkownika = ? ORDER BY Data_Utworzenia DESC";
+$params = [$id_uzytkownika];
+$stmt = sqlsrv_prepare($conn, $query, $params);
+if ($stmt === false) {
+    die(print_r(sqlsrv_errors(), true));
 }
+
+sqlsrv_execute($stmt);
+$koszyk = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+
+// Jeśli nie znaleziono koszyka
+if (!$koszyk) {
+    die("Nie masz aktywnego koszyka.");
+}
+
+// Pobranie produktów w tym koszyku
+$koszyk_id = $koszyk['ID_Koszyka'];
+$query_products = "SELECT p.ID_Produktu, p.Nazwa_Produktu, p.Cena, kp.Ilosc
+                   FROM Koszyk_Produkt kp
+                   JOIN Produkt p ON p.ID_Produktu = kp.ID_Produktu
+                   WHERE kp.ID_Koszyka = ?";
+$stmt_products = sqlsrv_prepare($conn, $query_products, [$koszyk_id]);
+if ($stmt_products === false) {
+    die(print_r(sqlsrv_errors(), true));
+}
+
+sqlsrv_execute($stmt_products);
 ?>
 
 <!DOCTYPE html>
@@ -33,42 +45,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['add'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Panel - Koszyk</title>
+    <title>Twój Koszyk</title>
 </head>
 <body>
-    <h1>Koszyk</h1>
-    <form method="POST">
-        <label>ID Użytkownika: <input type="text" name="ID_Uzytkownika"></label><br>
-        <label>Data Utworzenia: <input type="datetime-local" name="Data_Utworzenia"></label><br>
-        <button type="submit" name="add">Dodaj</button>
-    </form>
+    <h1>Twój Koszyk</h1>
+    <p>Status koszyka: <?= htmlspecialchars($koszyk['Status']) ?></p>
+    <p>Data utworzenia: <?= $koszyk['Data_Utworzenia']->format('Y-m-d H:i:s') ?></p>
 
-    <h2>Lista koszyków</h2>
-    <table border="1">
-        <thead>
-            <tr>
-                <th>ID Koszyka</th>
-                <th>ID Użytkownika</th>
-                <th>Data Utworzenia</th>
-                <th>Akcje</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php
-            $query = "SELECT * FROM Koszyk";
-            $result = sqlsrv_query($conn, $query);
-            while ($row = sqlsrv_fetch_array($result, SQLSRV_FETCH_ASSOC)) {
-                echo "<tr>
-                        <td>{$row['ID_Koszyka']}</td>
-                        <td>{$row['ID_Uzytkownika']}</td>
-                        <td>{$row['Data_Utworzenia']->format('Y-m-d H:i:s')}</td>
-                        <td>
-                            <a href='koszyk.php?delete_id={$row['ID_Koszyka']}'>Usuń</a>
-                        </td>
-                    </tr>";
-            }
-            ?>
-        </tbody>
-    </table>
+    <h2>Produkty w koszyku</h2>
+    <?php
+    if (sqlsrv_num_rows($stmt_products) > 0) {
+        echo "<table border='1'>
+                <thead>
+                    <tr>
+                        <th>Nazwa Produktu</th>
+                        <th>Cena</th>
+                        <th>Ilosc</th>
+                        <th>Łączna cena</th>
+                    </tr>
+                </thead>
+                <tbody>";
+
+        while ($row = sqlsrv_fetch_array($stmt_products, SQLSRV_FETCH_ASSOC)) {
+            $total_price = $row['Cena'] * $row['Ilosc'];
+            echo "<tr>
+                    <td>" . htmlspecialchars($row['Nazwa_Produktu']) . "</td>
+                    <td>" . number_format($row['Cena'], 2) . " zł</td>
+                    <td>" . $row['Ilosc'] . "</td>
+                    <td>" . number_format($total_price, 2) . " zł</td>
+                  </tr>";
+        }
+
+        echo "</tbody></table>";
+    } else {
+        echo "<p>Twój koszyk jest pusty.</p>";
+    }
+
+    // Zwolnienie zasobów
+    sqlsrv_free_stmt($stmt);
+    sqlsrv_free_stmt($stmt_products);
+    sqlsrv_close($conn);
+    ?>
 </body>
 </html>

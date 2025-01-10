@@ -1,4 +1,5 @@
 <?php
+session_start();
 include 'db.php'; // Połączenie z bazą danych
 
 // Obsługa usuwania rekordu

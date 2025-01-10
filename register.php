@@ -1,4 +1,5 @@
 <?php
+session_start();
 include 'db.php'; // Plik z połączeniem do bazy danych
 
 // Sprawdzanie, czy formularz został wysłany

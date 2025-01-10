@@ -2,8 +2,12 @@
 session_start();
 include 'db.php'; // Plik z połączeniem do bazy danych
 
-// Pobieranie 3 pierwszych produktów z bazy danych
-$query = "SELECT * FROM Produkt ORDER BY ID_Produktu"; // Zmienna w zależności od struktury bazy
+// Sprawdzenie, czy użytkownik jest zalogowany
+$is_logged_in = isset($_SESSION['ID_Uzytkownika']);
+$user_name = $is_logged_in ? $_SESSION['Imie'] : '';
+
+// Pobieranie produktów z bazy danych
+$query = "SELECT TOP 3 * FROM Produkt ORDER BY ID_Produktu"; // Pobierz tylko 3 produkty
 $result = sqlsrv_query($conn, $query);
 
 if ($result === false) {
@@ -27,12 +31,15 @@ if ($result === false) {
       <button>Szukaj</button>
     </div>
     <div class="user-menu">
-      <a href="register.php">Rejestracja</a>
-      <a href="login.php">Logowanie</a>
-
-      <a href="#">Moje Konto</a>
-      <a href="cart.php">Koszyk</a>
-      <a href="admin.php">Panel Admina</a>
+      <?php if ($is_logged_in): ?>
+        <p>Witaj, <?= htmlspecialchars($user_name) ?>!</p>
+        <a href="logout.php">Wyloguj</a>
+        <a href="cart.php">Koszyk</a>
+        <a href="admin.php">Panel Admina</a>
+      <?php else: ?>
+        <a href="register.php">Rejestracja</a>
+        <a href="login.php">Logowanie</a>
+      <?php endif; ?>
     </div>
   </header>
 
@@ -64,7 +71,7 @@ if ($result === false) {
               <a href="product.php?id=<?= htmlspecialchars($row['ID_Produktu']) ?>">Zobacz produkt</a>
             </div>
           <?php endwhile; ?>
-          
+
           <!-- Sztywne produkty (dla testów) -->
           <div class="product">
             <img src="https://via.placeholder.com/150" alt="JBL Speaker">

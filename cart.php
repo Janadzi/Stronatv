@@ -1,116 +1,98 @@
 <?php
 session_start();
-include 'db.php'; // Połączenie z bazą danych, np. SQL Server lub MySQL
+include 'db.php'; // Połączenie z bazą danych
 
-// Funkcja do obliczenia łącznej ceny
-function calculateTotal($cart) {
-    $total = 0;
-    foreach ($cart as $item) {
-        $total += $item['price'] * $item['quantity'];
-    }
-    return $total;
+// Sprawdzenie, czy użytkownik jest zalogowany
+if (!isset($_SESSION['ID_Uzytkownika'])) {
+    die("Musisz być zalogowany, aby wyświetlić koszyk.");
 }
 
-// Dodawanie produktu do koszyka
-if (isset($_GET['add'])) {
-    $productId = (int)$_GET['add'];
-    $quantity = (int)$_GET['quantity'] ?? 1;
+// Pobranie ID użytkownika
+$id_uzytkownika = $_SESSION['ID_Uzytkownika']; 
 
-    // Sprawdzenie, czy produkt już jest w koszyku
-    if (isset($_SESSION['cart'][$productId])) {
-        $_SESSION['cart'][$productId]['quantity'] += $quantity;
-    } else {
-        // Pobranie danych o produkcie z bazy
-        $query = "SELECT ID_Produktu, Nazwa_Produktu, Cena FROM Produkt WHERE ID_Produktu = ?";
-        $params = [$productId];
-        $stmt = sqlsrv_prepare($conn, $query, $params);
-        if (sqlsrv_execute($stmt)) {
-            $product = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
-            $_SESSION['cart'][$productId] = [
-                'name' => $product['Nazwa_Produktu'],
-                'price' => $product['Cena'],
-                'quantity' => $quantity
-            ];
-        }
-    }
+// Znalezienie najnowszego koszyka dla użytkownika
+$query = "SELECT TOP 1 * FROM Koszyk WHERE ID_Uzytkownika = ? ORDER BY Data_Utworzenia DESC";
+$params = [$id_uzytkownika];
+$stmt = sqlsrv_prepare($conn, $query, $params);
+if ($stmt === false) {
+    die(print_r(sqlsrv_errors(), true));
 }
 
-// Usuwanie produktu z koszyka
-if (isset($_GET['remove'])) {
-    $productId = (int)$_GET['remove'];
-    unset($_SESSION['cart'][$productId]);
+sqlsrv_execute($stmt);
+$koszyk = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+
+// Jeśli nie znaleziono koszyka
+if (!$koszyk) {
+    die("Nie masz aktywnego koszyka.");
 }
 
-// Aktualizacja ilości produktów w koszyku
-if (isset($_POST['update'])) {
-    foreach ($_POST['quantity'] as $productId => $quantity) {
-        if ($quantity > 0) {
-            $_SESSION['cart'][$productId]['quantity'] = $quantity;
-        } else {
-            unset($_SESSION['cart'][$productId]);
-        }
-    }
+// Pobranie produktów w tym koszyku
+$koszyk_id = $koszyk['ID_Koszyka'];
+$query_products = "SELECT p.ID_Produktu, p.Nazwa_Produktu, p.Cena, kp.Ilosc
+                   FROM Koszyk_Produkt kp
+                   JOIN Produkt p ON p.ID_Produktu = kp.ID_Produktu
+                   WHERE kp.ID_Koszyka = ?";
+$stmt_products = sqlsrv_prepare($conn, $query_products, [$koszyk_id]);
+if ($stmt_products === false) {
+    die(print_r(sqlsrv_errors(), true));
 }
 
-// Sprawdzenie, czy koszyk jest pusty
-$cartEmpty = empty($_SESSION['cart']);
-$totalPrice = $cartEmpty ? 0 : calculateTotal($_SESSION['cart']);
+sqlsrv_execute($stmt_products);
+
+// Sprawdzenie, czy w zapytaniu są produkty
+$products = [];
+while ($row = sqlsrv_fetch_array($stmt_products, SQLSRV_FETCH_ASSOC)) {
+    $products[] = $row; // Dodajemy każdy produkt do tablicy
+}
 
 ?>
+
 <!DOCTYPE html>
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Koszyk</title>
-    <link rel="stylesheet" href="css/style.css">
+    <title>Twój Koszyk</title>
 </head>
 <body>
-    <header>
-        <h1>Koszyk</h1>
-        <a href="index.php">Powrót do sklepu</a>
-    </header>
+    <h1>Twój Koszyk</h1>
+    <p>Status koszyka: <?= htmlspecialchars($koszyk['Status']) ?></p>
+    <p>Data utworzenia: <?= $koszyk['Data_Utworzenia']->format('Y-m-d H:i:s') ?></p>
 
-    <main>
-        <?php if ($cartEmpty): ?>
-            <p>Twój koszyk jest pusty.</p>
-        <?php else: ?>
-            <form action="" method="POST">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Nazwa Produktu</th>
-                            <th>Cena</th>
-                            <th>Ilość</th>
-                            <th>Razem</th>
-                            <th>Akcja</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($_SESSION['cart'] as $productId => $item): ?>
-                            <tr>
-                                <td><?= htmlspecialchars($item['name']) ?></td>
-                                <td><?= number_format($item['price'], 2, ',', ' ') ?> zł</td>
-                                <td>
-                                    <input type="number" name="quantity[<?= $productId ?>]" value="<?= $item['quantity'] ?>" min="1">
-                                </td>
-                                <td><?= number_format($item['price'] * $item['quantity'], 2, ',', ' ') ?> zł</td>
-                                <td>
-                                    <a href="?remove=<?= $productId ?>">Usuń</a>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
+    <h2>Produkty w koszyku</h2>
+    <?php
+    // Jeśli są produkty, wyświetl je
+    if (count($products) > 0) {
+        echo "<table border='1'>
+                <thead>
+                    <tr>
+                        <th>Nazwa Produktu</th>
+                        <th>Cena</th>
+                        <th>Ilosc</th>
+                        <th>Łączna cena</th>
+                    </tr>
+                </thead>
+                <tbody>";
 
-                <button type="submit" name="update">Aktualizuj Koszyk</button>
-            </form>
+        foreach ($products as $row) {
+            $total_price = $row['Cena'] * $row['Ilosc'];
+            echo "<tr>
+                    <td>" . htmlspecialchars($row['Nazwa_Produktu']) . "</td>
+                    <td>" . number_format($row['Cena'], 2) . " zł</td>
+                    <td>" . $row['Ilosc'] . "</td>
+                    <td>" . number_format($total_price, 2) . " zł</td>
+                  </tr>";
+        }
 
-            <div class="total">
-                <p>Łączna cena: <?= number_format($totalPrice, 2, ',', ' ') ?> zł</p>
-                <a href="checkout.php">Przejdź do kasy</a>
-            </div>
-        <?php endif; ?>
-    </main>
+        echo "</tbody></table>";
+    } else {
+        echo "<p>Twój koszyk jest pusty.</p>";
+    }
+
+    // Zwolnienie zasobów
+    sqlsrv_free_stmt($stmt);
+    sqlsrv_free_stmt($stmt_products);
+    sqlsrv_close($conn);
+    ?>
 </body>
 </html>

@@ -1,4 +1,5 @@
 <?php
+session_start();
 // Lista tabel w projekcie
 $tabele = [
     "Produkty" => "produkty.php",
