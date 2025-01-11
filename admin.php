@@ -2,16 +2,15 @@
 session_start();
 // Lista tabel w projekcie
 $tabele = [
-    "Produkty" => "produkty.php",
-    "Zamówienia" => "zamowienia.php",
-    "Klienci" => "klienci.php",
-    "Kategorie" => "kategorie.php",
-    "Pracownicy" => "pracownicy.php",
-    "Dostawcy" => "dostawcy.php",
-    "Magazyn" => "magazyn.php",
-    "Faktury" => "faktury.php",
-    "Koszyki" => "koszyk.php",
-    "Kategorie produktów" => "kategorie.php"
+    "Produkty" => "admin_produkty.php",
+    "Zamówienia" => "admin_zamowienia.php",
+    "Klienci" => "admin_klienci.php",
+    "Kategorie" => "admin_kategorie.php",
+    "Pracownicy" => "admin_pracownicy.php",
+    "Dostawcy" => "admin_dostawcy.php",
+    "Magazyn" => "admin_magazyn.php",
+    "Faktury" => "admin_faktury.php",
+    "Koszyki" => "admin_koszyk.php",
 ];
 ?>
 
