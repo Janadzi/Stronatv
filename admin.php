@@ -11,6 +11,7 @@ $tabele = [
     "Magazyn" => "admin_magazyn.php",
     "Faktury" => "admin_faktury.php",
     "Koszyki" => "admin_koszyk.php",
+    "Produkt w koszyku" => "admin_koszyk_product.php"
 ];
 ?>
 

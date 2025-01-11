@@ -37,38 +37,56 @@ while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Twoje Zamówienia</title>
+    <link rel="stylesheet" href="css/zamowienia.css">
 </head>
 <body>
-    <h1>Twoje aktywne zamówienia</h1>
+    <header class="header">
+        <div class="logo">TechHouse</div>
+        <nav class="user-menu">
+            <a href="index.php">Strona główna</a>
+            <a href="logout.php">Wyloguj</a>
+            <a href="cart.php">Koszyk</a>
+            <a href="zamowienia.php">Zamówienia</a>
+        </nav>
+    </header>
 
-    <?php if (count($orders) > 0): ?>
-        <table border="1">
-            <thead>
-                <tr>
-                    <th>ID Zamówienia</th>
-                    <th>Data Złożenia</th>
-                    <th>Status</th>
-                    <th>Łączna Kwota</th>
-                    <th>Opcje</th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($orders as $order): ?>
-                    <tr>
-                        <td><?= htmlspecialchars($order['ID_Zamowienia']) ?></td>
-                        <td><?= $order['Data_Zlozenia']->format('Y-m-d H:i:s') ?></td>
-                        <td><?= htmlspecialchars($order['Status']) ?></td>
-                        <td><?= number_format($order['Laczna_Kwota'], 2) ?> zł</td>
-                        <td>
-                            <a href="order_details.php?order_id=<?= $order['ID_Zamowienia'] ?>">Szczegóły</a>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    <?php else: ?>
-        <p>Nie masz żadnych aktywnych zamówień.</p>
-    <?php endif; ?>
+    <main>
+        <section class="orders-section">
+            <h1>Twoje aktywne zamówienia</h1>
 
+            <?php if (count($orders) > 0): ?>
+                <table class="orders-table">
+                    <thead>
+                        <tr>
+                            <th>ID Zamówienia</th>
+                            <th>Data Złożenia</th>
+                            <th>Status</th>
+                            <th>Łączna Kwota</th>
+                            <th>Opcje</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($orders as $order): ?>
+                            <tr>
+                                <td><?= htmlspecialchars($order['ID_Zamowienia']) ?></td>
+                                <td><?= $order['Data_Zlozenia']->format('Y-m-d H:i:s') ?></td>
+                                <td><?= htmlspecialchars($order['Status']) ?></td>
+                                <td><?= number_format($order['Laczna_Kwota'], 2) ?> zł</td>
+                                <td>
+                                    <a href="order_details.php?order_id=<?= $order['ID_Zamowienia'] ?>" class="btn">Szczegóły</a>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php else: ?>
+                <p>Nie masz żadnych aktywnych zamówień.</p>
+            <?php endif; ?>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 TechHouse. Wszelkie prawa zastrzeżone.</p>
+    </footer>
 </body>
 </html>

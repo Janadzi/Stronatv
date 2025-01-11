@@ -100,51 +100,70 @@ while ($row = sqlsrv_fetch_array($stmt_products, SQLSRV_FETCH_ASSOC)) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Twój Koszyk</title>
+    <link rel="stylesheet" href="css/koszyk.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
-    <h1>Twój Koszyk</h1>
-    <p>Status koszyka: <?= htmlspecialchars($koszyk['Status']) ?></p>
-    <p>Data utworzenia: <?= $koszyk['Data_Utworzenia']->format('Y-m-d H:i:s') ?></p>
+    <header class="header">
+        <div class="logo">TechHouse</div>
+        <nav class="user-menu">
+            <a href="index.php">Strona główna</a>
+            <a href="logout.php">Wyloguj</a>
+            <a href="cart.php">Koszyk</a>
+            <a href="zamowienia.php">Zamówienia</a>
+        </nav>
+    </header>
 
-    <h2>Produkty w koszyku</h2>
-    <?php if (count($products) > 0): ?>
-        <table border="1">
-            <thead>
-                <tr>
-                    <th>Nazwa Produktu</th>
-                    <th>Cena</th>
-                    <th>Ilość</th>
-                    <th>Łączna cena</th>
-                    <th>Akcja</th>
-                </tr>
-            </thead>
-            <tbody id="cart-table">
-                <?php foreach ($products as $row): ?>
-                    <tr data-product-id="<?= $row['ID_Produktu'] ?>">
-                        <td><?= htmlspecialchars($row['Nazwa_Produktu']) ?></td>
-                        <td><?= number_format($row['Cena'], 2) ?> zł</td>
-                        <td>
-                            <input type="number" class="quantity-input" value="<?= $row['Ilosc'] ?>" min="1">
-                        </td>
-                        <td class="total-price"><?= number_format($row['Cena'] * $row['Ilosc'], 2) ?> zł</td>
-                        <td>
-                            <button class="delete-button">Usuń</button>
-                        </td>
-                    </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-        <p><strong>Łączna kwota: <span id="total-amount"><?= number_format($total_amount, 2) ?></span> zł</strong></p>
+    <main>
+        <section class="cart-section">
+            <h1>Twój Koszyk</h1>
+            <p>Status koszyka: <?= htmlspecialchars($koszyk['Status']) ?></p>
+            <p>Data utworzenia: <?= $koszyk['Data_Utworzenia']->format('Y-m-d H:i:s') ?></p>
 
-    <!-- Przycisk do finalizacji zamówienia -->
-    <form action="finalize_order.php" method="GET">
-            <button type="submit" id="finalize-order-button">Finalizuj zamówienie</button>
-        </form>
+            <h2>Produkty w koszyku</h2>
+            <?php if (count($products) > 0): ?>
+                <table class="cart-table">
+                    <thead>
+                        <tr>
+                            <th>Nazwa Produktu</th>
+                            <th>Cena</th>
+                            <th>Ilość</th>
+                            <th>Łączna cena</th>
+                            <th>Akcja</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cart-table">
+                        <?php foreach ($products as $row): ?>
+                            <tr data-product-id="<?= $row['ID_Produktu'] ?>">
+                                <td><?= htmlspecialchars($row['Nazwa_Produktu']) ?></td>
+                                <td><?= number_format($row['Cena'], 2) ?> zł</td>
+                                <td>
+                                    <input type="number" class="quantity-input" value="<?= $row['Ilosc'] ?>" min="1">
+                                </td>
+                                <td class="total-price"><?= number_format($row['Cena'] * $row['Ilosc'], 2) ?> zł</td>
+                                <td>
+                                    <button class="delete-button">Usuń</button>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                <p><strong>Łączna kwota: <span id="total-amount"><?= number_format($total_amount, 2) ?></span> zł</strong></p>
 
-    <?php else: ?>
-        <p>Twój koszyk jest pusty.</p>
-    <?php endif; ?>
+                <!-- Przycisk do finalizacji zamówienia -->
+                <form action="finalize_order.php" method="GET">
+                    <button type="submit" id="finalize-order-button">Finalizuj zamówienie</button>
+                </form>
+
+            <?php else: ?>
+                <p>Twój koszyk jest pusty.</p>
+            <?php endif; ?>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 TechHouse. Wszelkie prawa zastrzeżone.</p>
+    </footer>
 
     <script>
         // Funkcja aktualizująca ilość produktów
