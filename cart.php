@@ -136,6 +136,12 @@ while ($row = sqlsrv_fetch_array($stmt_products, SQLSRV_FETCH_ASSOC)) {
             </tbody>
         </table>
         <p><strong>Łączna kwota: <span id="total-amount"><?= number_format($total_amount, 2) ?></span> zł</strong></p>
+
+    <!-- Przycisk do finalizacji zamówienia -->
+    <form action="finalize_order.php" method="GET">
+            <button type="submit" id="finalize-order-button">Finalizuj zamówienie</button>
+        </form>
+
     <?php else: ?>
         <p>Twój koszyk jest pusty.</p>
     <?php endif; ?>
