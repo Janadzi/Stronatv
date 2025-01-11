@@ -37,6 +37,7 @@ if ($result === false) {
         <a href="cart.php">Koszyk</a>
         <a href="admin.php">Panel Admina</a>
         <a href="zamowienia.php">Zamówienia</a>
+        <a href="profil.php">Profil</a>
       <?php else: ?>
         <a href="register.php">Rejestracja</a>
         <a href="login.php">Logowanie</a>
